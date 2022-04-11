@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional
 
 
 from .discrete_log import DiscreteLog
@@ -121,7 +121,7 @@ class HashedElGamalCiphertext:
 
     def decrypt(
         self, secret_key: ElGamalSecretKey, encryption_seed: ElementModQ
-    ) -> Union[bytes, None]:
+    ) -> bytes:
         """
         Decrypt an ElGamal ciphertext using a known ElGamal secret key.
 
@@ -143,7 +143,7 @@ class HashedElGamalCiphertext:
             log_error("MAC verification failed in decryption.")
             return None
         (ciphertext_chunks, bit_length) = _get_chunks(self.data)
-        data = b""
+        decrypted_data = b""
         for i, block in enumerate(ciphertext_chunks):
             data_key = get_hmac(
                 session_key.to_hex_bytes(),
@@ -151,8 +151,8 @@ class HashedElGamalCiphertext:
                 bit_length,
                 (i + 1),
             )
-            data += bytes([a ^ b for (a, b) in zip(block, data_key)])
-        return data
+            decrypted_data += bytes([a ^ b for (a, b) in zip(block, data_key)])
+        return decrypted_data
 
 
 def elgamal_keypair_from_secret(a: ElementModQ) -> Optional[ElGamalKeyPair]:
@@ -226,7 +226,7 @@ def hashed_elgamal_encrypt(
     :param message: message (m) to encrypt; must be in bytes.
     :param nonce: Randomly chosen nonce in [1, Q).
     :param public_key: ElGamal public key.
-    :param encryption_seed: Encryption seed (Q) for election.
+    :param encryption_seed: Encryption seed (Q) aka crypto_bash_hash for election.
     """
 
     pad = g_pow_p(nonce)
@@ -255,7 +255,7 @@ def hashed_elgamal_encrypt(
     log_info(f": pad: {pad.to_hex()}")
     log_info(f": data: {data!r}")
     log_info(f": mac: {mac.hex()}")
-    log_info(f"to_mac {to_mac!r}")
+    log_info(f": to_mac: {to_mac!r}")
 
     return HashedElGamalCiphertext(pad, data, get_optional(hex_to_q(mac.hex())))
 
