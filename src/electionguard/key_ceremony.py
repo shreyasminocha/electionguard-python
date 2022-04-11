@@ -126,7 +126,7 @@ class ElectionPartialKeyBackup:
     The sequence order of the designated guardian
     """
 
-    coordinate: ElementModQ
+    encrypted_coordinate: ElementModQ
     """
     The coordinate corresponding to a secret election polynomial
     """
@@ -158,7 +158,7 @@ class ElectionPartialKeyChallenge:
     designated_id: GuardianId
     designated_sequence_order: int
 
-    value: ElementModQ
+    coordinate: ElementModQ
     coefficient_commitments: List[PublicCommitment]
     coefficient_proofs: List[SchnorrProof]
 
@@ -212,7 +212,7 @@ def verify_election_partial_key_backup(
     :param election_public_key: Other guardian's election public key
     """
 
-    value = backup.coordinate
+    value = backup.encrypted_coordinate
     return ElectionPartialKeyVerification(
         backup.owner_id,
         backup.designated_id,
@@ -259,7 +259,7 @@ def verify_election_partial_key_challenge(
         challenge.designated_id,
         verifier_id,
         verify_polynomial_coordinate(
-            challenge.value,
+            challenge.coordinate,
             challenge.designated_sequence_order,
             challenge.coefficient_commitments,
         ),

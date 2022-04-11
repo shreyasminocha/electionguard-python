@@ -471,7 +471,7 @@ def compensate_decrypt(
     if nonce_seed is None:
         nonce_seed = rand_q()
 
-    partial_secret_key = missing_guardian_backup.coordinate
+    partial_secret_key = missing_guardian_backup.encrypted_coordinate
 
     # 𝑀_{𝑖,l} = 𝐴^P𝑖_{l}
     partial_decryption = ciphertext.partial_decrypt(partial_secret_key)
