@@ -189,14 +189,14 @@ def generate_election_partial_key_backup(
     :param polynomial: The owner's Election polynomial
     :return: Election partial key backup
     """
-    value = compute_polynomial_coordinate(
+    coordinate = compute_polynomial_coordinate(
         designated_guardian_key.sequence_order, polynomial
     )
     return ElectionPartialKeyBackup(
         owner_id,
         designated_guardian_key.owner_id,
         designated_guardian_key.sequence_order,
-        value,
+        coordinate,
     )
 
 
@@ -212,13 +212,13 @@ def verify_election_partial_key_backup(
     :param election_public_key: Other guardian's election public key
     """
 
-    value = backup.encrypted_coordinate
+    coordinate = backup.encrypted_coordinate
     return ElectionPartialKeyVerification(
         backup.owner_id,
         backup.designated_id,
         verifier_id,
         verify_polynomial_coordinate(
-            value,
+            coordinate,
             backup.designated_sequence_order,
             election_public_key.coefficient_commitments,
         ),
