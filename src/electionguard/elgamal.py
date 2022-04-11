@@ -27,6 +27,10 @@ _MAC_KEY_SIZE = 256
 _BLOCK_SIZE = 32
 
 
+class ElGamalDecryptionError(Exception):
+    """Error resulting from ElGamal Decryption."""
+
+
 @dataclass
 class ElGamalKeyPair:
     """A tuple of an ElGamal secret key and public key."""
@@ -140,8 +144,10 @@ class HashedElGamalCiphertext:
         mac = get_hmac(mac_key, to_mac).hex()
 
         if mac != self.mac.to_hex():
-            log_error("MAC verification failed in decryption.")
-            return None
+            raise ElGamalDecryptionError(
+                "Hashed elgamal decryption  mac verification failed in decryption."
+            )
+
         (ciphertext_chunks, bit_length) = _get_chunks(self.data)
         decrypted_data = b""
         for i, block in enumerate(ciphertext_chunks):

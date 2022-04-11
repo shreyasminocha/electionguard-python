@@ -11,9 +11,11 @@ from .election_polynomial import (
 from .elgamal import (
     ElGamalKeyPair,
     ElGamalPublicKey,
+    HashedElGamalCiphertext,
     elgamal_combine_public_keys,
+    hashed_elgamal_encrypt,
 )
-from .group import ElementModQ
+from .group import ElementModQ, rand_q
 from .hash import hash_elems
 from .schnorr import SchnorrProof
 from .type import (
@@ -126,7 +128,7 @@ class ElectionPartialKeyBackup:
     The sequence order of the designated guardian
     """
 
-    encrypted_coordinate: ElementModQ
+    encrypted_coordinate: HashedElGamalCiphertext
     """
     The coordinate corresponding to a secret election polynomial
     """
@@ -182,6 +184,7 @@ def generate_election_partial_key_backup(
     owner_id: GuardianId,
     polynomial: ElectionPolynomial,
     designated_guardian_key: ElectionPublicKey,
+    encryption_seed: ElementModQ,
 ) -> ElectionPartialKeyBackup:
     """
     Generate election partial key backup for sharing
@@ -192,27 +195,38 @@ def generate_election_partial_key_backup(
     coordinate = compute_polynomial_coordinate(
         designated_guardian_key.sequence_order, polynomial
     )
+    nonce = rand_q()
+    encrypted_coordinate = hashed_elgamal_encrypt(
+        coordinate.to_hex_bytes(),
+        nonce,
+        designated_guardian_key.key,
+        encryption_seed,
+    )
     return ElectionPartialKeyBackup(
         owner_id,
         designated_guardian_key.owner_id,
         designated_guardian_key.sequence_order,
-        coordinate,
+        encrypted_coordinate,
     )
 
 
 def verify_election_partial_key_backup(
     verifier_id: str,
     backup: ElectionPartialKeyBackup,
-    election_public_key: ElectionPublicKey,
+    election_key_pair: ElectionKeyPair,
+    encryption_seed: ElementModQ,
 ) -> ElectionPartialKeyVerification:
     """
     Verify election partial key backup contain point on owners polynomial
     :param verifier_id: Verifier of the partial key backup
     :param backup: Other guardian's election partial key backup
-    :param election_public_key: Other guardian's election public key
+    :param key_pair: Other guardian's election public key
+    :param encryption_seed: Encryption seed (Q) aka crypto_bash_hash for election.
     """
 
-    coordinate = backup.encrypted_coordinate
+    coordinate = backup.encrypted_coordinate.decrypt(
+        election_key_pair.key_pair.secret_key, encryption_seed
+    )
     return ElectionPartialKeyVerification(
         backup.owner_id,
         backup.designated_id,
@@ -220,7 +234,7 @@ def verify_election_partial_key_backup(
         verify_polynomial_coordinate(
             coordinate,
             backup.designated_sequence_order,
-            election_public_key.coefficient_commitments,
+            election_key_pair.polynomial.get_commitments(),
         ),
     )
 
